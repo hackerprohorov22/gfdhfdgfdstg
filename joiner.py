@@ -1,6 +1,5 @@
 from hikkatl.types import Message
 from .. import loader, utils
-from hikka import loader
 import re
 import aiohttp
 
@@ -26,18 +25,19 @@ class AutoJoinModule(loader.Module):
 
     async def watcher(self, message: Message):
         """Мониторинг сообщений"""
-        if not self.is_running:
+        if not self.is_running or not message.text:
             return
 
-        if "joinchat" in message.text:
-            link = re.search(r"https://t\.me/joinchat/\S+", message.text)
-            if link:
-                try:
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(link.group()) as response:
-                            if response.status == 200:
-                                await message.reply("Присоединился к каналу по ссылке!")
-                            else:
-                                await message.reply("Не удалось присоединиться к каналу!")
-                except Exception as e:
-                    await message.reply(f"Произошла ошибка: {str(e)}")
+        match = re.search(r"https://t\.me/(joinchat/\S+|\+\S+)", message.text)
+        if match:
+            link = match.group()
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(link) as response:
+                        if response.status == 200:
+                            await self._client(JoinChannelRequest(link))
+                            await message.reply("Присоединился к каналу по ссылке!")
+                        else:
+                            await message.reply("Не удалось присоединиться к каналу!")
+            except Exception as e:
+                await message.reply(f"Произошла ошибка: {str(e)}")
