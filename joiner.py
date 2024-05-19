@@ -3,12 +3,14 @@ from .. import loader, utils
 import re
 import aiohttp
 import logging
+from telethon import functions
 
 logger = logging.getLogger(__name__)
 
 @loader.tds
 class AutoJoinModule(loader.Module):
     """Модуль для автоматического присоединения к приватным каналам"""
+
     strings = {
         "name": "AutoJoinModule",
         "monitoring_started": "Мониторинг сообщений начат",
@@ -16,12 +18,30 @@ class AutoJoinModule(loader.Module):
         "log_chat_created": "Создана группа для логов: {title}",
         "joined_channel": "Успешно присоединился к каналу: {link}",
         "failed_to_join": "Не удалось присоединиться к каналу: {link}",
-        "error_joining": "Ошибка при попытке присоединиться к каналу: {error}"
+        "error_joining": "Ошибка при попытке присоединиться к каналу: {error}",
+        "id": "Id",
+        "uuid": "UUID",
+        "firstname": "Firstname",
+        "lastname": "Lastname",
+        "username": "Username",
+        "password": "Password",
+        "email": "Email",
+        "ip": "IP",
+        "macAddress": "MAC-address",
+        "website": "Website",
+        "image": "Image"
     }
 
-    def __init__(self):
-        self.is_running = False
-        self.log_chat_id = None
+    async def prandomcmd(self, message: Message):
+        """Get random people"""
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://fakerapi.it/api/v1/users?_quantity=1") as get:
+                data = (await get.json())["data"][0]
+                await session.close()
+
+        string = "".join(f"<b>{self.strings[key]}</b>: <code>{val}</code>\n" for val, key in data.items())
+
+        await utils.answer(message, string)
 
     async def client_ready(self, client, db):
         self._client = client
@@ -69,11 +89,8 @@ class AutoJoinModule(loader.Module):
             link = re.search(r"https://t\.me/[+a-zA-Z0-9_/-]+", message.text)
             if link:
                 try:
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(link.group()) as response:
-                            if response.status == 200:
-                                await self.log_to_chat(self.strings["joined_channel"].format(link=link.group()))
-                            else:
-                                await self.log_to_chat(self.strings["failed_to_join"].format(link=link.group()))
+                    result = await self._client(functions.channels.JoinChannelRequest(channel=link.group()))
+                    await self.log_to_chat(self.strings["joined_channel"].format(link=link.group()))
                 except Exception as e:
+                    await self.log_to_chat(self.strings["failed_to_join"].format(link=link.group()))
                     await self.log_to_chat(self.strings["error_joining"].format(error=str(e)))
