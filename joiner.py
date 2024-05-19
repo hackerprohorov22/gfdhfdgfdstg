@@ -1,4 +1,7 @@
-from telethon.tl.functions.channels import CreateChannelRequest
+from hikkatl.types import Message
+from .. import loader, utils
+import re
+import aiohttp
 
 @loader.tds
 class AutoJoinModule(loader.Module):
@@ -7,14 +10,11 @@ class AutoJoinModule(loader.Module):
 
     def __init__(self):
         self.is_running = False
-        self.log_channel = None
 
     @loader.command
     async def start(self, message: Message):
         """Начать мониторинг сообщений"""
         self.is_running = True
-        self.log_channel = await self._client(CreateChannelRequest(
-            "AutoJoin Logs", "Логи автоматического присоединения", megagroup=True))
         await utils.answer(message, "Мониторинг сообщений начат")
 
     @loader.command
@@ -32,7 +32,11 @@ class AutoJoinModule(loader.Module):
             link = re.search(r"https://t\.me/joinchat/\S+", message.text)
             if link:
                 try:
-                    await self._client(JoinChannelRequest(link.group()))
-                    await self._client.send_message(self.log_channel, f"Успешно присоединился к {link.group()}")
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(link.group()) as response:
+                            if response.status == 200:
+                                await message.reply("Присоединился к каналу по ссылке!")
+                            else:
+                                await message.reply("Не удалось присоединиться к каналу!")
                 except Exception as e:
-                    await self._client.send_message(self.log_channel, f"Не удалось присоединиться к {link.group()}. Ошибка: {str(e)}")
+                    await message.reply(f"Произошла ошибка: {str(e)}")
