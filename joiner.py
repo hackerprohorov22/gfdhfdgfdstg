@@ -1,5 +1,6 @@
 from hikkatl.types import Message
 from .. import loader, utils
+from hikka import loader
 import re
 import aiohttp
 
