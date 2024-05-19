@@ -1,34 +1,38 @@
-from .. import loader, utils
-import re
-from telethon import events
+from telethon.tl.functions.channels import CreateChannelRequest
 
 @loader.tds
-class AutoJoinChannelsMod(loader.Module):
-    """Автоматически присоединяется к каналам по ссылкам"""
-    strings = {"name": "AutoJoinChannels"}
+class AutoJoinModule(loader.Module):
+    """Модуль для автоматического присоединения к приватным каналам"""
+    strings = {"name": "AutoJoinModule"}
 
-    async def client_ready(self, client, db):
-        self._client = client
-        self._db = db
-        self._running = False
+    def __init__(self):
+        self.is_running = False
+        self.log_channel = None
 
-    async def autostartcmd(self, message):
-        """Запустить мониторинг каналов"""
-        self._running = True
-        await utils.answer(message, self.strings('Мониторинг каналов запущен!'))
+    @loader.command
+    async def start(self, message: Message):
+        """Начать мониторинг сообщений"""
+        self.is_running = True
+        self.log_channel = await self._client(CreateChannelRequest(
+            "AutoJoin Logs", "Логи автоматического присоединения", megagroup=True))
+        await utils.answer(message, "Мониторинг сообщений начат")
 
-    async def autostopcmd(self, message):
-        """Остановить мониторинг каналов"""
-        self._running = False
-        await utils.answer(message, self.strings('Мониторинг каналов остановлен!'))
+    @loader.command
+    async def stop(self, message: Message):
+        """Остановить мониторинг сообщений"""
+        self.is_running = False
+        await utils.answer(message, "Мониторинг сообщений остановлен")
 
-    @loader.unrestricted
-    @loader.ratelimit
-    async def watcher(self, message):
-        if not self._running:
+    async def watcher(self, message: Message):
+        """Мониторинг сообщений"""
+        if not self.is_running:
             return
-        if re.search(r't.me/joinchat/', message.text):
-            link = re.findall(r't.me/joinchat/\S+', message.text)[0]
-            await self._client(JoinChannelRequest(link))
-            await utils.answer(message, f'Присоединился к каналу: {link}')
 
+        if "joinchat" in message.text:
+            link = re.search(r"https://t\.me/joinchat/\S+", message.text)
+            if link:
+                try:
+                    await self._client(JoinChannelRequest(link.group()))
+                    await self._client.send_message(self.log_channel, f"Успешно присоединился к {link.group()}")
+                except Exception as e:
+                    await self._client.send_message(self.log_channel, f"Не удалось присоединиться к {link.group()}. Ошибка: {str(e)}")
