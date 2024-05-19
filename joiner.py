@@ -3,7 +3,6 @@ from .. import loader, utils
 import re
 import aiohttp
 import logging
-from telethon import functions
 
 logger = logging.getLogger(__name__)
 
@@ -12,11 +11,9 @@ class AutoJoinModule(loader.Module):
     """Модуль для автоматического присоединения к приватным каналам"""
     strings = {
         "name": "AutoJoinModule",
-        "start": "Начать мониторинг сообщений",
-        "stop": "Остановить мониторинг сообщений",
-        "log_chat_created": "Создана группа для логов: {title}",
         "monitoring_started": "Мониторинг сообщений начат",
         "monitoring_stopped": "Мониторинг сообщений остановлен",
+        "log_chat_created": "Создана группа для логов: {title}",
         "joined_channel": "Успешно присоединился к каналу: {link}",
         "failed_to_join": "Не удалось присоединиться к каналу: {link}",
         "error_joining": "Ошибка при попытке присоединиться к каналу: {error}"
@@ -32,14 +29,16 @@ class AutoJoinModule(loader.Module):
         self.me = await client.get_me()
         self.log_chat_id = self._db.get(self.name, "log_chat_id", None)
 
-    async def startcmd(self, message: Message):
+    @loader.command
+    async def start(self, message: Message):
         """Начать мониторинг сообщений"""
         self.is_running = True
         if not self.log_chat_id:
             await self.create_log_chat(message)
         await self.log_to_chat(self.strings["monitoring_started"])
 
-    async def stopcmd(self, message: Message):
+    @loader.command
+    async def stop(self, message: Message):
         """Остановить мониторинг сообщений"""
         self.is_running = False
         await self.log_to_chat(self.strings["monitoring_stopped"])
@@ -77,4 +76,4 @@ class AutoJoinModule(loader.Module):
                             else:
                                 await self.log_to_chat(self.strings["failed_to_join"].format(link=link.group()))
                 except Exception as e:
-                    await self.log_to_chat(self.strings["error_joining"].format(error=str(e))))
+                    await self.log_to_chat(self.strings["error_joining"].format(error=str(e)))
