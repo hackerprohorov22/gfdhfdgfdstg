@@ -2,6 +2,7 @@ from hikkatl.types import Message
 from .. import loader, utils
 import re
 import aiohttp
+import logging  # Добавлен импорт logging
 
 logger = logging.getLogger(__name__)
 
