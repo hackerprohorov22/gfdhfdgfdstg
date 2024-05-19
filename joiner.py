@@ -52,13 +52,13 @@ class AutoJoinModule(loader.Module):
         self.is_running = True
         if not self.log_chat_id:
             await self.create_log_chat(message)
-        await self.log_to_chat(self.strings("monitoring_started"), message)
+        await self.log_to_chat(self.strings("monitoring_started"))
 
     @loader.command(ru_doc="Остановить мониторинг сообщений")
     async def stopcmd(self, message: Message):
         """Остановить мониторинг сообщений"""
         self.is_running = False
-        await self.log_to_chat(self.strings("monitoring_stopped"), message)
+        await self.log_to_chat(self.strings("monitoring_stopped"))
 
     async def create_log_chat(self, message: Message):
         """Создать группу для логов"""
@@ -68,14 +68,14 @@ class AutoJoinModule(loader.Module):
         ))
         self.log_chat_id = result.chats[0].id
         self._db.set(self.name, "log_chat_id", self.log_chat_id)
-        await self.log_to_chat(self.strings("log_chat_created").format(title=result.chats[0].title), message)
+        await self.log_to_chat(self.strings("log_chat_created").format(title=result.chats[0].title))
 
-    async def log_to_chat(self, log_message: str, message: Message):
+    async def log_to_chat(self, log_message: str):
         """Отправить лог в группу"""
         if self.log_chat_id:
             await self._client.send_message(self.log_chat_id, log_message)
         else:
-            await utils.answer(message, "Лог-группа не создана. Пожалуйста, запустите /startcmd для создания лог-группы.")
+            logger.error("Лог-группа не создана. Пожалуйста, запустите /startcmd для создания лог-группы.")
 
     async def watcher(self, message: Message):
         """Мониторинг сообщений"""
@@ -89,8 +89,8 @@ class AutoJoinModule(loader.Module):
                     async with aiohttp.ClientSession() as session:
                         async with session.get(link.group()) as response:
                             if response.status == 200:
-                                await self.log_to_chat(self.strings("joined_channel").format(link=link.group()), message)
+                                await self.log_to_chat(self.strings("joined_channel").format(link=link.group()))
                             else:
-                                await self.log_to_chat(self.strings("failed_to_join").format(link=link.group()), message)
+                                await self.log_to_chat(self.strings("failed_to_join").format(link=link.group()))
                 except Exception as e:
-                    await self.log_to_chat(self.strings("error_joining").format(error=str(e)), message)
+                    await self.log_to_chat(self.strings("error_joining").format(error=str(e)))
