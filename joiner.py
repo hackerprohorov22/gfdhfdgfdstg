@@ -1,10 +1,9 @@
 from hikkatl.types import Message
 from .. import loader, utils
 import re
-import aiohttp
-import logging
 from telethon import functions
 
+import logging
 logger = logging.getLogger(__name__)
 
 @loader.tds
@@ -18,30 +17,12 @@ class AutoJoinModule(loader.Module):
         "log_chat_created": "Создана группа для логов: {title}",
         "joined_channel": "Успешно присоединился к каналу: {link}",
         "failed_to_join": "Не удалось присоединиться к каналу: {link}",
-        "error_joining": "Ошибка при попытке присоединиться к каналу: {error}",
-        "id": "Id",
-        "uuid": "UUID",
-        "firstname": "Firstname",
-        "lastname": "Lastname",
-        "username": "Username",
-        "password": "Password",
-        "email": "Email",
-        "ip": "IP",
-        "macAddress": "MAC-address",
-        "website": "Website",
-        "image": "Image"
+        "error_joining": "Ошибка при попытке присоединиться к каналу: {error}"
     }
 
-    async def prandomcmd(self, message: Message):
-        """Get random people"""
-        async with aiohttp.ClientSession() as session:
-            async with session.get("https://fakerapi.it/api/v1/users?_quantity=1") as get:
-                data = (await get.json())["data"][0]
-                await session.close()
-
-        string = "".join(f"<b>{self.strings[key]}</b>: <code>{val}</code>\n" for val, key in data.items())
-
-        await utils.answer(message, string)
+    def __init__(self):
+        self.is_running = False
+        self.log_chat_id = None
 
     async def client_ready(self, client, db):
         self._client = client
