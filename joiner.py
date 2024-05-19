@@ -2,7 +2,8 @@ from hikkatl.types import Message
 from .. import loader, utils
 import re
 import aiohttp
-import logging  # Добавлен импорт logging
+import logging
+from telethon import functions  # Добавлен импорт функций Telethon
 
 logger = logging.getLogger(__name__)
 
